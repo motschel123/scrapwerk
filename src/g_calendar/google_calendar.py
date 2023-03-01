@@ -1,14 +1,12 @@
 from __future__ import print_function
 
-import datetime
-import os.path
-import inquirer
-
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+
+import os.path
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/calendar.events',
@@ -17,11 +15,9 @@ SCOPES = ['https://www.googleapis.com/auth/calendar.events',
 
 class GoogleCalendar:
     _service = None
-    _calendar_id = None
 
     def __init__(self):
         self._get_service()
-        self._select_calendar()
 
     def _get_service(self):
         try: 
@@ -47,7 +43,7 @@ class GoogleCalendar:
         except HttpError as error:
             print('An error occurred: %s' % error)
 
-    def _select_calendar(self) -> str:
+    def get_calendar_list(self) -> list:
         try:
             if self.service is None:
                 self.service = self.get_service()
@@ -55,41 +51,15 @@ class GoogleCalendar:
             # list available calendars
             calendars = self.service.calendarList().list(minAccessRole='writer').execute()
 
-            # prompt the user to select a calendar
-            selected_calendar_name = inquirer.prompt([
-                inquirer.List('calendar',
-                    message="In which calendar do you want to add events from E-Werk?",
-                    choices=[calendar['summary'] for calendar in calendars['items'] if calendar['accessRole'] == 'owner'])
-            ])['calendar']
-            # get calendar item with name supplied by user
-            self.calendar_id = [calendar for calendar in calendars['items'] if calendar['summary'] == selected_calendar_name][0]['id']
+            return calendars['items']
         except HttpError as error:
             print('An error occurred: %s' % error)
 
-    def add_event(self, event):
+    def create_event(self, calendarId, body):
         try:
-            if self.calendar_id is None:
-                self.calendar_id = self.select_calendar()
             self.service.events().insert(
-                calendarId=self.calendar_id,
-                body={
-                "summary": "[E-Werk] " + f"{event['title']}",
-                    "location": "E-Werk Kulturzentrum Erlangen: " + "/".join(event['locations']),
-                    "start": {
-                        "dateTime": event['datetime'],
-                        "timeZone": "Europe/Berlin",
-                    },
-                    "end": {
-                        "dateTime": (datetime.datetime.fromisoformat(event['datetime']) + datetime.timedelta(hours=2)).isoformat(),
-                        "timeZone": "Europe/Berlin",
-                    },
-                    "source": {
-                        "title": "E-Werk Kulturzentrum Erlangen",
-                        "url": event['url'],
-                    },
-                    "transparency": "transparent",
-                    #"status": "cancelled",
-                }
+                calendarId=calendarId,
+                body=body,
             ).execute()
         except HttpError as error:
             print('An error occurred: %s' % error)

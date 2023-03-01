@@ -2,7 +2,9 @@ import os
 import scrapy
 import datetime
 import locale
+
 from .event_items import EventItem
+
 
 locale.setlocale(locale.LC_ALL, 'de_DE')
 class EwerkSpider(scrapy.Spider):
@@ -56,13 +58,21 @@ class EwerkSpider(scrapy.Spider):
         from scrapy.crawler import CrawlerProcess
 
         process = CrawlerProcess({
-            'FEED_FORMAT': 'json',
-            'FEED_URI': 'events.json',
-            'FEED_EXPORT_ENCODING': 'utf-8',
+            'FEEDS': {
+                'events.json': {
+                    'format': 'json',
+                    'encoding': 'utf8',
+                    'overwrite': True,
+                    'item_classes': [EventItem, 'scrapy_spiders.event_items.EventItem']
+
+                },
+            },
+            'REQUEST_FINGERPRINTER_IMPLEMENTATION': '2.7',
+            'LOG_LEVEL': 'WARNING',
         })
         spider = EwerkSpider
         process.crawl(spider)
-        process.start()
+        process.start() # the script will block here until the crawling is finished
 
 
 if __name__ == '__main__':
