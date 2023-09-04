@@ -1,5 +1,5 @@
 # collect all requirements 
-scrapy==2.8.0
+Scrapy==2.10.1
 inquirer==3.1.2
 google-api-python-client==2.79.0
 google-auth-httplib2==0.1.0
